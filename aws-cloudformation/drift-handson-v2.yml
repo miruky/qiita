@@ -1,0 +1,21 @@
+# ============================================================
+# AWS CloudFormation シリーズ #5
+# ドリフト修正版 — Version タグ追加
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Drift Detection Handson - v2
+
+Resources:
+  HandsonBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'drift-handson-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Environment
+          Value: dev
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Version
+          Value: v2
