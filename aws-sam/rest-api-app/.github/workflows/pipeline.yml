@@ -1,0 +1,125 @@
+# ソース記事: AWS SAM #6 — REST APIアプリを構築してCI/CDパイプラインまで通してみる
+# GitHub Actions CI/CD パイプライン
+# develop → dev環境、main → prod環境
+
+name: SAM Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  SAM_CLI_TELEMETRY: 0
+  PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  REGION: ap-northeast-1
+
+jobs:
+  # =============================================
+  # テスト
+  # =============================================
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest boto3 moto
+
+      - name: Run unit tests
+        run: pytest tests/ -v
+
+      - name: Validate SAM template
+        run: |
+          pip install aws-sam-cli
+          sam validate --lint
+
+  # =============================================
+  # ビルド
+  # =============================================
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Build SAM application
+        run: sam build --cached --parallel
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sam-build
+          path: .aws-sam/
+
+  # =============================================
+  # 開発環境デプロイ
+  # =============================================
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sam-build
+          path: .aws-sam/
+
+      - name: Deploy to dev
+        run: sam deploy --config-env default --no-confirm-changeset
+
+  # =============================================
+  # 本番環境デプロイ
+  # =============================================
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sam-build
+          path: .aws-sam/
+
+      - name: Deploy to prod
+        run: sam deploy --config-env prod --no-confirm-changeset
