@@ -1,0 +1,69 @@
+version: 0.2
+
+run-as: <ユーザー名>     # (オプション) ビルドコマンドの実行ユーザー
+
+env:
+  variables:              # プレーンテキストの環境変数
+    KEY: "value"
+  parameter-store:        # Systems Manager パラメータストアから取得
+    KEY: "/path/to/param"
+  secrets-manager:        # Secrets Managerから取得
+    KEY: "secret-id:json-key"
+  exported-variables:     # CodePipelineに渡す環境変数
+    - VAR_NAME
+
+proxy:                    # (オプション) プロキシ設定
+  upload-artifacts: yes
+  logs: yes
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "install"
+    finally:
+      - echo "install finally"
+
+  pre_build:
+    commands:
+      - echo "pre_build"
+    finally:
+      - echo "pre_build finally"
+
+  build:
+    commands:
+      - echo "build"
+    finally:
+      - echo "build finally"
+
+  post_build:
+    commands:
+      - echo "post_build"
+    finally:
+      - echo "post_build finally"
+
+reports:                  # テストレポートの出力
+  report-group-name:
+    files:
+      - '**/*'
+    base-directory: reports
+    file-format: JUNITXML
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: dist
+  name: output-$(date +%Y%m%d)
+  discard-paths: no
+  secondary-artifacts:    # 複数のアーティファクト定義
+    artifact1:
+      files:
+        - file1.txt
+    artifact2:
+      files:
+        - file2.txt
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
