@@ -1,0 +1,225 @@
+# ソース記事: AWS SAM #6 — REST APIアプリを構築してCI/CDパイプラインまで通してみる
+# Items CRUD API: API Gateway + Lambda(5関数) + DynamoDB + Connectors
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Items CRUD API - SAM Series #6 Sample Application
+
+# =============================================================
+# パラメータ
+# =============================================================
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+# =============================================================
+# グローバル設定
+# =============================================================
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ItemsTable
+        STAGE: !Ref Stage
+        LOG_LEVEL: INFO
+    Tags:
+      Project: sam-items-api
+      Stage: !Ref Stage
+
+  Api:
+    TracingEnabled: true
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowOrigin: "'*'"
+
+# =============================================================
+# リソース定義
+# =============================================================
+Resources:
+
+  # -----------------------------------------------------------
+  # API Gateway
+  # -----------------------------------------------------------
+  ItemsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Description: Items CRUD API
+
+  # -----------------------------------------------------------
+  # DynamoDB テーブル
+  # -----------------------------------------------------------
+  ItemsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      Tags:
+        Project: sam-items-api
+
+  # -----------------------------------------------------------
+  # Lambda関数：アイテム一覧取得
+  # -----------------------------------------------------------
+  ListItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/list_items.lambda_handler
+      CodeUri: .
+      Description: Get all items
+      Events:
+        ListItems:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ItemsApi
+            Path: /items
+            Method: GET
+
+  # -----------------------------------------------------------
+  # Lambda関数：アイテム作成
+  # -----------------------------------------------------------
+  CreateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create_item.lambda_handler
+      CodeUri: .
+      Description: Create a new item
+      Events:
+        CreateItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ItemsApi
+            Path: /items
+            Method: POST
+
+  # -----------------------------------------------------------
+  # Lambda関数：アイテム取得
+  # -----------------------------------------------------------
+  GetItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get_item.lambda_handler
+      CodeUri: .
+      Description: Get an item by ID
+      Events:
+        GetItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ItemsApi
+            Path: /items/{id}
+            Method: GET
+
+  # -----------------------------------------------------------
+  # Lambda関数：アイテム更新
+  # -----------------------------------------------------------
+  UpdateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update_item.lambda_handler
+      CodeUri: .
+      Description: Update an item
+      Events:
+        UpdateItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ItemsApi
+            Path: /items/{id}
+            Method: PUT
+
+  # -----------------------------------------------------------
+  # Lambda関数：アイテム削除
+  # -----------------------------------------------------------
+  DeleteItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/delete_item.lambda_handler
+      CodeUri: .
+      Description: Delete an item
+      Events:
+        DeleteItem:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ItemsApi
+            Path: /items/{id}
+            Method: DELETE
+
+  # -----------------------------------------------------------
+  # Connector：Lambda → DynamoDB のアクセス権限
+  # -----------------------------------------------------------
+  ListItemsConnector:
+    Type: AWS::Serverless::Connector
+    Properties:
+      Source:
+        Id: ListItemsFunction
+      Destination:
+        Id: ItemsTable
+      Permissions:
+        - Read
+
+  CreateItemConnector:
+    Type: AWS::Serverless::Connector
+    Properties:
+      Source:
+        Id: CreateItemFunction
+      Destination:
+        Id: ItemsTable
+      Permissions:
+        - Write
+
+  GetItemConnector:
+    Type: AWS::Serverless::Connector
+    Properties:
+      Source:
+        Id: GetItemFunction
+      Destination:
+        Id: ItemsTable
+      Permissions:
+        - Read
+
+  UpdateItemConnector:
+    Type: AWS::Serverless::Connector
+    Properties:
+      Source:
+        Id: UpdateItemFunction
+      Destination:
+        Id: ItemsTable
+      Permissions:
+        - Read
+        - Write
+
+  DeleteItemConnector:
+    Type: AWS::Serverless::Connector
+    Properties:
+      Source:
+        Id: DeleteItemFunction
+      Destination:
+        Id: ItemsTable
+      Permissions:
+        - Write
+
+# =============================================================
+# 出力
+# =============================================================
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ItemsApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+
+  ItemsTableName:
+    Description: DynamoDB Table Name
+    Value: !Ref ItemsTable
+
+  ListItemsFunctionArn:
+    Description: List Items Function ARN
+    Value: !GetAtt ListItemsFunction.Arn
