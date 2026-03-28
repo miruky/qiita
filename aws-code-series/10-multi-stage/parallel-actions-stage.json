@@ -1,0 +1,47 @@
+{
+    "name": "Test",
+    "actions": [
+        {
+            "name": "UnitTest",
+            "actionTypeId": {
+                "category": "Build",
+                "owner": "AWS",
+                "provider": "CodeBuild",
+                "version": "1"
+            },
+            "runOrder": 1,
+            "configuration": {
+                "ProjectName": "unit-test-project"
+            },
+            "inputArtifacts": [{"name": "SourceOutput"}]
+        },
+        {
+            "name": "LintCheck",
+            "actionTypeId": {
+                "category": "Build",
+                "owner": "AWS",
+                "provider": "CodeBuild",
+                "version": "1"
+            },
+            "runOrder": 1,
+            "configuration": {
+                "ProjectName": "lint-check-project"
+            },
+            "inputArtifacts": [{"name": "SourceOutput"}]
+        },
+        {
+            "name": "SecurityScan",
+            "actionTypeId": {
+                "category": "Build",
+                "owner": "AWS",
+                "provider": "CodeBuild",
+                "version": "1"
+            },
+            "runOrder": 1,
+            "configuration": {
+                "ProjectName": "security-scan-project"
+            },
+            "inputArtifacts": [{"name": "SourceOutput"}]
+        }
+    ]
+}
