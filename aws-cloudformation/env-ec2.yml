@@ -1,0 +1,213 @@
+# ============================================================
+# AWS CloudFormation シリーズ #3
+# 環境別 EC2 構築 — Mappings / Conditions / UserData
+#
+# FIX: Outputs の EnvironmentInfo で Fn::Sub 内から Mappings を直接
+#      参照する構文（${EnvConfig.${EnvironmentName}.InstanceType}）は
+#      無効です。Fn::Sub の第 2 引数で FindInMap を使うよう修正済み。
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Environment-aware EC2 instance with Conditions and Intrinsic Functions
+
+# ============================================================
+# Metadata
+# ============================================================
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 環境設定
+        Parameters:
+          - EnvironmentName
+      - Label:
+          default: ネットワーク設定
+        Parameters:
+          - VpcId
+          - SubnetId
+      - Label:
+          default: サーバー設定
+        Parameters:
+          - KeyPairName
+
+# ============================================================
+# Parameters
+# ============================================================
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, production]
+    Description: 環境名を選択
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 既存のVPC IDを選択
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: 既存のサブネットIDを選択
+
+  KeyPairName:
+    Type: String
+    Default: ''
+    Description: キーペア名（空欄の場合はSSM接続）
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+# ============================================================
+# Mappings
+# ============================================================
+Mappings:
+  EnvConfig:
+    dev:
+      InstanceType: t3.micro
+      DetailedMonitoring: 'false'
+      CostCenter: development
+    production:
+      InstanceType: t3.small
+      DetailedMonitoring: 'true'
+      CostCenter: production
+
+# ============================================================
+# Conditions
+# ============================================================
+Conditions:
+  IsProduction: !Equals [!Ref EnvironmentName, production]
+  HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
+
+# ============================================================
+# Resources
+# ============================================================
+Resources:
+  # ── Security Group ──
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${EnvironmentName} instance security group'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub 'cfn-${EnvironmentName}-sg'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # ── IAM Role（SSM接続用） ──
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'cfn-${EnvironmentName}-ec2-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  # ── EC2 Instance ──
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !FindInMap [EnvConfig, !Ref EnvironmentName, InstanceType]
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      IamInstanceProfile: !Ref InstanceProfile
+      Monitoring: !If [IsProduction, true, false]
+      KeyName: !If [HasKeyPair, !Ref KeyPairName, !Ref 'AWS::NoValue']
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          cat << 'HTML' > /var/www/html/index.html
+          <html>
+          <body>
+          <h1>${EnvironmentName} Environment</h1>
+          <p>Stack: ${AWS::StackName}</p>
+          <p>Region: ${AWS::Region}</p>
+          </body>
+          </html>
+          HTML
+      Tags:
+        - Key: Name
+          Value: !Sub 'cfn-${EnvironmentName}-web'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: CostCenter
+          Value: !FindInMap [EnvConfig, !Ref EnvironmentName, CostCenter]
+
+  # ── CloudWatch Alarm（本番のみ） ──
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsProduction
+    Properties:
+      AlarmName: !Sub '${EnvironmentName}-high-cpu'
+      AlarmDescription: CPU utilization exceeds 80%
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref WebServer
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+
+# ============================================================
+# Outputs
+# ============================================================
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref WebServer
+
+  PublicIP:
+    Description: EC2 Public IP Address
+    Value: !GetAtt WebServer.PublicIp
+
+  WebURL:
+    Description: Web Server URL
+    Value: !Sub 'http://${WebServer.PublicIp}/'
+
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref InstanceSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SGId'
+
+  # FIX: 記事原文では ${EnvConfig.${EnvironmentName}.InstanceType} を
+  #      Fn::Sub 内で参照していたが、Mappings は直接参照できない。
+  #      Fn::Sub の第 2 引数 + FindInMap で解決。
+  EnvironmentInfo:
+    Description: Environment summary
+    Value: !Sub
+      - 'Env=${EnvironmentName}, Type=${InstanceTypeValue}, Region=${AWS::Region}'
+      - InstanceTypeValue: !FindInMap [EnvConfig, !Ref EnvironmentName, InstanceType]
+
+  CPUAlarmArn:
+    Condition: IsProduction
+    Description: CPU Alarm ARN (production only)
+    Value: !GetAtt CPUAlarm.Arn
