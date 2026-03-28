@@ -1,0 +1,39 @@
+# ============================================================
+# AWS CloudFormation シリーズ #4
+# クロススタック参照 — EC2 側（ImportValue）
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Stack importing from VPC Stack
+
+Parameters:
+  VPCStackName:
+    Type: String
+    Default: vpc-stack
+    Description: VPCスタックの名前
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue
+        Fn::Sub: '${VPCStackName}-PublicSubnet1Id'
+      SecurityGroupIds:
+        - !Ref WebSG
+
+  WebSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Web server SG
+      VpcId: !ImportValue
+        Fn::Sub: '${VPCStackName}-VPCId'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
