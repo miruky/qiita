@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/hello",
+  "queryStringParameters": {
+    "name": "SAM"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": null,
+  "isBase64Encoded": false
+}
