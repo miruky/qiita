@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-app-bucket
+      VersioningConfiguration:
+        Status: Enabled
+
+  MyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: my-handler
+      Runtime: python3.13
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {'statusCode': 200, 'body': 'Hello'}
+      Role: !GetAtt MyFunctionRole.Arn
+
+  MyFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
