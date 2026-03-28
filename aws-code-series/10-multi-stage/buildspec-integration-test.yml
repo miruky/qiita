@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+  variables:
+    STAGING_URL: "http://staging-alb.example.com"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - pip install requests pytest
+
+  build:
+    commands:
+      - echo "Running integration tests against $STAGING_URL"
+      - python -m pytest integration_tests/ -v --junitxml=reports/integration.xml
+    finally:
+      - echo "Integration tests completed"
+
+reports:
+  integration-test-reports:
+    files:
+      - 'integration.xml'
+    base-directory: reports
+    file-format: JUNITXML
