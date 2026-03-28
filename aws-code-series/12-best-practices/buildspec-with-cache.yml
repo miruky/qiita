@@ -1,0 +1,8 @@
+# buildspec.yml でキャッシュを有効化
+version: 0.2
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+    - 'node_modules/**/*'
+    - '.gradle/**/*'
