@@ -1,0 +1,46 @@
+name: "Terraform Module Test"
+
+on:
+  pull_request:
+    paths:
+      - "modules/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+  TF_VERSION: "1.7.0"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # モジュールごとにテストを実行
+      - name: Run Module Tests
+        run: |
+          for module_dir in modules/*/; do
+            if [ -d "${module_dir}tests" ]; then
+              echo "=== Testing ${module_dir} ==="
+              cd "$module_dir"
+              terraform init
+              terraform test
+              cd -
+            fi
+          done
