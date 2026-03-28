@@ -1,0 +1,32 @@
+version: 3
+
+projects:
+  # dev 環境
+  - name: dev
+    dir: environments/dev
+    workspace: default
+    terraform_version: v1.7.0
+    autoplan:
+      when_modified:
+        - "*.tf"
+        - "../../modules/**/*.tf"
+        - "../envs/dev.tfvars"
+      enabled: true
+    apply_requirements:
+      - approved
+      - mergeable
+
+  # prod 環境
+  - name: prod
+    dir: environments/prod
+    workspace: default
+    terraform_version: v1.7.0
+    autoplan:
+      when_modified:
+        - "*.tf"
+        - "../../modules/**/*.tf"
+        - "../envs/prod.tfvars"
+      enabled: true
+    apply_requirements:
+      - approved
+      - mergeable
