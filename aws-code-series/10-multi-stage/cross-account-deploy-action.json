@@ -1,0 +1,15 @@
+{
+    "name": "Deploy-Production",
+    "actionTypeId": {
+        "category": "Deploy",
+        "owner": "AWS",
+        "provider": "CodeDeploy",
+        "version": "1"
+    },
+    "configuration": {
+        "ApplicationName": "prod-app",
+        "DeploymentGroupName": "prod-dg"
+    },
+    "roleArn": "arn:aws:iam::<AccountB-ID>:role/CrossAccountCodeDeployRole",
+    "inputArtifacts": [{"name": "BuildOutput"}]
+}
