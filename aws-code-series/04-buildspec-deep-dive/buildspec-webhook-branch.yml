@@ -1,0 +1,11 @@
+phases:
+  build:
+    commands:
+      - |
+        if [ "$CODEBUILD_WEBHOOK_HEAD_REF" = "refs/heads/main" ]; then
+          echo "Production build"
+          ./build-prod.sh
+        else
+          echo "Development build"
+          ./build-dev.sh
+        fi
