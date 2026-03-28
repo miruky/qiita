@@ -1,0 +1,98 @@
+{
+    "name": "code-series-demo-pipeline",
+    "roleArn": "arn:aws:iam::123456789012:role/service-role/AWSCodePipelineServiceRole",
+    "pipelineType": "V2",
+    "stages": [
+        {
+            "name": "Source",
+            "actions": [
+                {
+                    "name": "GitHub-Source",
+                    "actionTypeId": {
+                        "category": "Source",
+                        "owner": "AWS",
+                        "provider": "CodeStarSourceConnection",
+                        "version": "1"
+                    },
+                    "configuration": {
+                        "ConnectionArn": "arn:aws:codestar-connections:ap-northeast-1:123456789012:connection/xxx",
+                        "FullRepositoryId": "username/aws-code-series-demo",
+                        "BranchName": "main",
+                        "DetectChanges": "true"
+                    },
+                    "outputArtifacts": [{"name": "SourceOutput"}]
+                }
+            ]
+        },
+        {
+            "name": "Build",
+            "actions": [
+                {
+                    "name": "CodeBuild-Build",
+                    "actionTypeId": {
+                        "category": "Build",
+                        "owner": "AWS",
+                        "provider": "CodeBuild",
+                        "version": "1"
+                    },
+                    "configuration": {
+                        "ProjectName": "code-series-demo-build"
+                    },
+                    "inputArtifacts": [{"name": "SourceOutput"}],
+                    "outputArtifacts": [{"name": "BuildOutput"}]
+                }
+            ]
+        },
+        {
+            "name": "Approval",
+            "actions": [
+                {
+                    "name": "ManualApproval",
+                    "actionTypeId": {
+                        "category": "Approval",
+                        "owner": "AWS",
+                        "provider": "Manual",
+                        "version": "1"
+                    },
+                    "configuration": {
+                        "NotificationArn": "arn:aws:sns:ap-northeast-1:123456789012:codepipeline-notifications",
+                        "CustomData": "本番デプロイの承認をお願いします"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Deploy",
+            "actions": [
+                {
+                    "name": "CodeDeploy-Deploy",
+                    "actionTypeId": {
+                        "category": "Deploy",
+                        "owner": "AWS",
+                        "provider": "CodeDeploy",
+                        "version": "1"
+                    },
+                    "configuration": {
+                        "ApplicationName": "code-series-demo-app",
+                        "DeploymentGroupName": "code-series-demo-dg"
+                    },
+                    "inputArtifacts": [{"name": "BuildOutput"}]
+                }
+            ]
+        }
+    ],
+    "triggers": [
+        {
+            "providerType": "CodeStarSourceConnection",
+            "gitConfiguration": {
+                "push": [
+                    {
+                        "branches": {
+                            "includes": ["main"]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
