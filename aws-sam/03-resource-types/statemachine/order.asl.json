@@ -1,0 +1,36 @@
+{
+  "Comment": "ソース記事: AWS SAM #3 — SAMリソースタイプを一通り使ってみる / Step Functions ASL定義 / DefinitionSubstitutions で ARN を挿入する",
+  "StartAt": "ValidateOrder",
+  "States": {
+    "ValidateOrder": {
+      "Type": "Task",
+      "Resource": "${ValidateOrderFunctionArn}",
+      "Next": "ProcessPayment",
+      "Catch": [
+        {
+          "ErrorEquals": ["ValidationError"],
+          "Next": "OrderFailed"
+        }
+      ]
+    },
+    "ProcessPayment": {
+      "Type": "Task",
+      "Resource": "${ProcessPaymentFunctionArn}",
+      "Next": "NotifySuccess"
+    },
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${NotifyTopicArn}",
+        "Message": "Order processed successfully"
+      },
+      "End": true
+    },
+    "OrderFailed": {
+      "Type": "Fail",
+      "Error": "OrderProcessingFailed",
+      "Cause": "Order validation failed"
+    }
+  }
+}
