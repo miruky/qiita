@@ -1,0 +1,11 @@
+env:
+  parameter-store:
+    API_KEY: "/codebuild/demo/API_KEY"
+    DB_HOST: "/codebuild/demo/DB_HOST"
+
+phases:
+  build:
+    commands:
+      - echo "DB Host: $DB_HOST"
+      # API_KEYは機密情報なのでechoしない
+      - ./deploy.sh --api-key "$API_KEY"
