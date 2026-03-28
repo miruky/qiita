@@ -1,0 +1,13 @@
+version: 0.0
+Resources:
+  - MyFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        Name: "my-lambda-function"
+        Alias: "prod"
+        CurrentVersion: "5"
+        TargetVersion: "6"
+
+Hooks:
+  - BeforeAllowTraffic: "CodeDeployHook_BeforeAllowTraffic"
+  - AfterAllowTraffic: "CodeDeployHook_AfterAllowTraffic"
