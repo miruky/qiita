@@ -1,0 +1,26 @@
+# ============================================================
+# AWS CloudFormation シリーズ #6
+# cfn-guard セキュリティルール
+# ============================================================
+
+# S3 バケットはバージョニング必須
+rule s3_versioning_enabled {
+    AWS::S3::Bucket {
+        Properties.VersioningConfiguration.Status == "Enabled"
+    }
+}
+
+# EC2 インスタンスは t3 ファミリーのみ許可
+rule ec2_instance_type {
+    AWS::EC2::Instance {
+        Properties.InstanceType in ["t3.micro", "t3.small", "t3.medium"]
+    }
+}
+
+# S3 バケットのパブリックアクセスブロック必須
+rule s3_public_access_block {
+    AWS::S3::Bucket {
+        Properties.PublicAccessBlockConfiguration exists
+        Properties.PublicAccessBlockConfiguration.BlockPublicAcls == true
+    }
+}
