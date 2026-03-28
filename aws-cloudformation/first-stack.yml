@@ -1,0 +1,43 @@
+# ============================================================
+# AWS CloudFormation シリーズ #1
+# 初めてのスタック — S3 バケット（バージョニング・暗号化・パブリックアクセスブロック）
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: My first CloudFormation stack - S3 bucket with security settings
+
+Resources:
+  # ============================================
+  # S3 バケット
+  # ============================================
+  MyFirstBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'my-first-cfn-bucket-${AWS::AccountId}'
+      # バージョニング有効化
+      VersioningConfiguration:
+        Status: Enabled
+      # パブリックアクセスブロック
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      # 暗号化設定
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      # タグ
+      Tags:
+        - Key: Environment
+          Value: handson
+        - Key: Project
+          Value: cfn-series
+
+Outputs:
+  BucketName:
+    Description: Created S3 bucket name
+    Value: !Ref MyFirstBucket
+  BucketArn:
+    Description: Created S3 bucket ARN
+    Value: !GetAtt MyFirstBucket.Arn
