@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - pip install pytest pytest-cov
+
+  build:
+    commands:
+      - echo "Running unit tests..."
+      - python -m pytest tests/ -v --junitxml=reports/junit.xml --cov=src --cov-report=xml:reports/coverage.xml
+    finally:
+      - echo "Tests completed"
+
+reports:
+  unit-test-reports:
+    files:
+      - 'junit.xml'
+    base-directory: reports
+    file-format: JUNITXML
+
+  coverage-reports:
+    files:
+      - 'coverage.xml'
+    base-directory: reports
+    file-format: COBERTURAXML
