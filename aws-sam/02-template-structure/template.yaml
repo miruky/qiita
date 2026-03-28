@@ -1,0 +1,115 @@
+# ソース記事: AWS SAM #2 — SAMテンプレートのGlobals・TransformとCloudFormationの違いを整理してみる
+# Globalsを活用したマルチ関数テンプレート
+# 構成: API Gateway → GetItems / CreateItem / HealthCheck → DynamoDB
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Multi-function API with Globals
+
+# 共通設定
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 128
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ItemsTable
+        LOG_LEVEL: INFO
+    Tags:
+      Project: ItemsAPI
+      ManagedBy: SAM
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+Resources:
+  # --- Lambda Functions ---
+  GetItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/get_items/
+      Handler: app.handler
+      Events:
+        GetItems:
+          Type: Api
+          Properties:
+            Path: /items
+            Method: GET
+            RestApiId: !Ref ItemsApi
+    Connectors:
+      TableRead:
+        Properties:
+          Destination:
+            Id: ItemsTable
+          Permissions:
+            - Read
+
+  CreateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/create_item/
+      Handler: app.handler
+      Timeout: 30     # Globals の 10秒 を上書き
+      Events:
+        CreateItem:
+          Type: Api
+          Properties:
+            Path: /items
+            Method: POST
+            RestApiId: !Ref ItemsApi
+    Connectors:
+      TableWrite:
+        Properties:
+          Destination:
+            Id: ItemsTable
+          Permissions:
+            - Write
+
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/health/
+      Handler: app.handler
+      MemorySize: 64  # Globals の 128MB を上書き
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: GET
+            RestApiId: !Ref ItemsApi
+
+  # --- API Gateway ---
+  ItemsApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Description: Items API
+
+  # --- DynamoDB ---
+  ItemsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      Tags:
+        Project: ItemsAPI
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ItemsApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  GetItemsFunctionArn:
+    Value: !GetAtt GetItemsFunction.Arn
+  CreateItemFunctionArn:
+    Value: !GetAtt CreateItemFunction.Arn
