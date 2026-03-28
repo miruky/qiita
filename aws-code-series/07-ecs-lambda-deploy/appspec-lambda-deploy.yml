@@ -1,0 +1,9 @@
+version: 0.0
+Resources:
+  - MyFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        Name: "code-series-lambda-demo"
+        Alias: "prod"
+        CurrentVersion: "1"
+        TargetVersion: "2"
