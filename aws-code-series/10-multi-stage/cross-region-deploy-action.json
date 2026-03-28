@@ -1,0 +1,15 @@
+{
+    "name": "Deploy-Osaka",
+    "actionTypeId": {
+        "category": "Deploy",
+        "owner": "AWS",
+        "provider": "CodeDeploy",
+        "version": "1"
+    },
+    "region": "ap-northeast-3",
+    "configuration": {
+        "ApplicationName": "osaka-app",
+        "DeploymentGroupName": "osaka-dg"
+    },
+    "inputArtifacts": [{"name": "BuildOutput"}]
+}
