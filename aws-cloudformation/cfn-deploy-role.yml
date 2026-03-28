@@ -1,0 +1,31 @@
+# ============================================================
+# AWS CloudFormation シリーズ #6
+# CodePipeline 用 CloudFormation デプロイロール
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IAM Role for CloudFormation deployment from CodePipeline
+
+Resources:
+  CloudFormationDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cfn-pipeline-deploy-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # 必要に応じてスコープを絞る
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      Tags:
+        - Key: ManagedBy
+          Value: cfn-cicd
+
+Outputs:
+  RoleArn:
+    Value: !GetAtt CloudFormationDeployRole.Arn
+    Export:
+      Name: cfn-deploy-role-arn
