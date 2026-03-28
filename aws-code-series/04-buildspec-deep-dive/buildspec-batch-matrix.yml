@@ -1,0 +1,27 @@
+version: 0.2
+
+batch:
+  fast-fail: false
+  build-matrix:
+    static:
+      ignore-failure: false
+    dynamic:
+      env:
+        variables:
+          NODE_VERSION:
+            - "18"
+            - "20"
+            - "22"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: $NODE_VERSION
+    commands:
+      - echo "Node.js version: $(node --version)"
+      - npm install
+
+  build:
+    commands:
+      - echo "Testing with Node.js $NODE_VERSION"
+      - npm test
