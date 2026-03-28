@@ -1,0 +1,16 @@
+{
+    "triggers": [{
+        "providerType": "CodeStarSourceConnection",
+        "gitConfiguration": {
+            "sourceActionName": "Source",
+            "push": [{
+                "branches": {
+                    "includes": ["main", "release/*"]
+                },
+                "filePaths": {
+                    "excludes": ["docs/**", "*.md", ".gitignore"]
+                }
+            }]
+        }
+    }]
+}
