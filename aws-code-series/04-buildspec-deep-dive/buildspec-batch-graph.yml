@@ -1,0 +1,35 @@
+version: 0.2
+
+batch:
+  fast-fail: false
+  build-graph:
+    - identifier: build_app
+      env:
+        variables:
+          BUILD_STAGE: "build"
+      buildspec: buildspec-build.yml
+
+    - identifier: test_unit
+      depend-on:
+        - build_app
+      env:
+        variables:
+          BUILD_STAGE: "unit-test"
+      buildspec: buildspec-test-unit.yml
+
+    - identifier: test_integration
+      depend-on:
+        - build_app
+      env:
+        variables:
+          BUILD_STAGE: "integration-test"
+      buildspec: buildspec-test-integration.yml
+
+    - identifier: package
+      depend-on:
+        - test_unit
+        - test_integration
+      env:
+        variables:
+          BUILD_STAGE: "package"
+      buildspec: buildspec-package.yml
