@@ -1,0 +1,17 @@
+{
+  "Records": [
+    {
+      "eventID": "1",
+      "eventName": "INSERT",
+      "dynamodb": {
+        "Keys": {
+          "id": { "S": "001" }
+        },
+        "NewImage": {
+          "id": { "S": "001" },
+          "name": { "S": "Test Item" }
+        }
+      }
+    }
+  ]
+}
