@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "=== Install Phase ==="
+      - echo "No dependencies to install for static site"
+
+  pre_build:
+    commands:
+      - echo "=== Pre Build Phase ==="
+      - echo "Running tests..."
+      - chmod +x tests/test_app.sh
+      - bash tests/test_app.sh
+
+  build:
+    commands:
+      - echo "=== Build Phase ==="
+      - echo "Build started on $(date)"
+      - echo "Build number: $CODEBUILD_BUILD_NUMBER"
+      # バージョン情報をHTMLに埋め込み
+      - sed -i "s/Deploy Time<\/td><td id=\"deploy-time\">-/Deploy Time<\/td><td id=\"deploy-time\">$(date '+%Y-%m-%d %H:%M:%S JST')/" index.html
+
+  post_build:
+    commands:
+      - echo "=== Post Build Phase ==="
+      - echo "Build completed successfully!"
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: no
