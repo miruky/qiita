@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Application Infrastructure
+
+# 注意: 教材用の簡易版テンプレートです。
+# 本番利用時は VPCId パラメータと RegionMap マッピングの追加が必要です。
+
+Parameters:
+  Environment:
+    Type: String
+    Default: staging
+    AllowedValues: [staging, production]
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: デプロイ先のVPC ID
+
+Mappings:
+  RegionMap:
+    ap-northeast-1:
+      AMI: ami-0ab3794db9457b60a
+    us-east-1:
+      AMI: ami-0c02fb55956c7d316
+
+Resources:
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Application Security Group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  AppInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: t2.micro
+      SecurityGroupIds:
+        - !Ref AppSecurityGroup
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
