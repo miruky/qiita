@@ -1,0 +1,14 @@
+{
+    "name": "NotifySlack",
+    "actionTypeId": {
+        "category": "Invoke",
+        "owner": "AWS",
+        "provider": "Lambda",
+        "version": "1"
+    },
+    "configuration": {
+        "FunctionName": "pipeline-slack-notifier",
+        "UserParameters": "{\"pipeline\":\"code-series-demo-pipeline\",\"stage\":\"Deploy\",\"webhook_url\":\"https://hooks.slack.com/services/xxx\"}"
+    },
+    "runOrder": 2
+}
