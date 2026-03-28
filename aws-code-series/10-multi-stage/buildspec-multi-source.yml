@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      # プライマリソース（AppSourceOutput）はデフォルトの作業ディレクトリ
+      - ls -la $CODEBUILD_SRC_DIR/
+      
+      # セカンダリソース（ConfigOutput）は環境変数で参照
+      - ls -la $CODEBUILD_SRC_DIR_ConfigOutput/
+      
+      # 設定ファイルをアプリケーションにコピー
+      - cp $CODEBUILD_SRC_DIR_ConfigOutput/config.json ./config/
+      
+      - echo "Building application..."
+      - npm run build
