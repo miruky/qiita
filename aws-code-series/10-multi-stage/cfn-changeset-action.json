@@ -1,0 +1,18 @@
+{
+    "name": "CreateChangeSet",
+    "actionTypeId": {
+        "category": "Deploy",
+        "owner": "AWS",
+        "provider": "CloudFormation",
+        "version": "1"
+    },
+    "configuration": {
+        "ActionMode": "CHANGE_SET_CREATE",
+        "StackName": "my-app-stack",
+        "ChangeSetName": "my-app-changeset",
+        "TemplatePath": "BuildOutput::template.yml",
+        "Capabilities": "CAPABILITY_IAM,CAPABILITY_NAMED_IAM",
+        "RoleArn": "arn:aws:iam::123456789012:role/CloudFormation-Role"
+    },
+    "inputArtifacts": [{"name": "BuildOutput"}]
+}
