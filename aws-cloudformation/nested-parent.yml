@@ -1,0 +1,64 @@
+# ============================================================
+# AWS CloudFormation シリーズ #4
+# ネステッドスタック — 親テンプレート
+#
+# NOTE: TemplateURL の YOUR-BUCKET を実際の S3 バケット名に置換してください。
+#   sed "s|YOUR-BUCKET|$BUCKET_NAME|g" nested-parent.yml > nested-parent-deploy.yml
+# ============================================================
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Parent Stack - Orchestrates VPC and EC2 nested stacks
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: nested-handson
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, production]
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium]
+
+Resources:
+  # ── VPC 子スタック ──
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/YOUR-BUCKET/templates/vpc.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        EnvironmentName: !Ref EnvironmentName
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # ── EC2 子スタック ──
+  EC2Stack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/YOUR-BUCKET/templates/ec2.yaml
+      Parameters:
+        ProjectName: !Ref ProjectName
+        EnvironmentName: !Ref EnvironmentName
+        VpcId: !GetAtt VPCStack.Outputs.VPCId
+        SubnetId: !GetAtt VPCStack.Outputs.PublicSubnetId
+        InstanceType: !Ref InstanceType
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+
+Outputs:
+  VPCId:
+    Description: VPC ID
+    Value: !GetAtt VPCStack.Outputs.VPCId
+
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !GetAtt EC2Stack.Outputs.InstanceId
+
+  WebURL:
+    Description: Web Server URL
+    Value: !Sub 'http://${EC2Stack.Outputs.PublicIP}/'
