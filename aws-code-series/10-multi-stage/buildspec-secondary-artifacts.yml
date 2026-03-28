@@ -1,0 +1,10 @@
+artifacts:
+  secondary-artifacts:
+    AppArtifact:
+      files:
+        - 'dist/**/*'
+      base-directory: .
+    DockerArtifact:
+      files:
+        - 'imagedefinitions.json'
+      base-directory: .
