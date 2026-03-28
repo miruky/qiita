@@ -1,0 +1,23 @@
+<!-- Amazon Lex #4 / #6 — SSML（Speech Synthesis Markup Language）サンプル -->
+<!-- Amazon Polly による音声合成を細かく制御するための SSML タグ例 -->
+
+<!-- 例1: 注文番号の復唱（#4） -->
+<speak>
+  注文番号 <say-as interpret-as="spell-out">ORD-001</say-as> の情報です。
+  <break time="500ms"/>
+  商品は、ワイヤレスイヤホンです。
+  ステータスは、<emphasis level="strong">配送中</emphasis>です。
+</speak>
+
+<!-- 例2: 注文番号のスペルアウト＋ポーズ（#6） -->
+<speak>
+  注文番号は
+  <say-as interpret-as="spell-out">ORD</say-as>
+  <break time="300ms"/>
+  ハイフン
+  <break time="300ms"/>
+  <say-as interpret-as="digits">001</say-as>
+  ですね。
+  <break time="500ms"/>
+  お調べします。
+</speak>
