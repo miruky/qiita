@@ -1,0 +1,55 @@
+# ============================================================
+# AWS CloudFormation シリーズ #6
+# cfn-lint + validate-template の CodeBuild Buildspec
+# ============================================================
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "=== Install Phase ==="
+      - pip install cfn-lint
+      - cfn-lint --version
+
+  pre_build:
+    commands:
+      - echo "=== Template Validation ==="
+      # AWS CLI による構文検証
+      - |
+        for template in $(find infrastructure/ -name "*.yaml" -o -name "*.yml"); do
+          echo "Validating: $template"
+          aws cloudformation validate-template --template-body file://$template
+          echo "$template is valid"
+        done
+
+  build:
+    commands:
+      - echo "=== cfn-lint Check ==="
+      # cfn-lint による詳細チェック
+      - cfn-lint infrastructure/**/*.yaml --format json > lint-results.json || true
+      - |
+        ERRORS=$(cat lint-results.json | python3 -c "import json,sys; data=json.load(sys.stdin); print(len([r for r in data if r['Level']=='Error']))")
+        WARNINGS=$(cat lint-results.json | python3 -c "import json,sys; data=json.load(sys.stdin); print(len([r for r in data if r['Level']=='Warning']))")
+        echo "Errors: $ERRORS, Warnings: $WARNINGS"
+        if [ "$ERRORS" -gt 0 ]; then
+          echo "cfn-lint found errors!"
+          cfn-lint infrastructure/**/*.yaml
+          exit 1
+        fi
+        echo "cfn-lint passed!"
+
+  post_build:
+    commands:
+      - echo "=== Validation Complete ==="
+
+reports:
+  cfn-lint-report:
+    files:
+      - lint-results.json
+    file-format: GENERICJSONREPORT
+
+artifacts:
+  files:
+    - 'infrastructure/**/*'
+    - 'buildspec-deploy.yml'
+  discard-paths: no
