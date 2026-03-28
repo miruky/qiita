@@ -1,0 +1,39 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "CloudWatchLogs",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:ap-northeast-1:ACCOUNT_ID:log-group:/aws/codebuild/*"
+        },
+        {
+            "Sid": "S3Artifacts",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:GetBucketLocation"
+            ],
+            "Resource": [
+                "arn:aws:s3:::ARTIFACT_BUCKET",
+                "arn:aws:s3:::ARTIFACT_BUCKET/*"
+            ]
+        },
+        {
+            "Sid": "ECRPull",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
