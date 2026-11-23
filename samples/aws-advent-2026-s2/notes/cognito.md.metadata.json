@@ -1,0 +1,8 @@
+{
+  "metadataAttributes": {
+    "service": "cognito",
+    "category": "セキュリティ",
+    "level": "応用",
+    "weak_point": true
+  }
+}

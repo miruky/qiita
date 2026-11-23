@@ -1,0 +1,8 @@
+{
+  "metadataAttributes": {
+    "service": "s3",
+    "category": "ストレージ",
+    "level": "基礎",
+    "weak_point": false
+  }
+}

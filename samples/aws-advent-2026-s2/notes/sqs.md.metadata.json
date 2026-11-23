@@ -1,0 +1,8 @@
+{
+  "metadataAttributes": {
+    "service": "sqs",
+    "category": "アプリケーション統合",
+    "level": "応用",
+    "weak_point": true
+  }
+}

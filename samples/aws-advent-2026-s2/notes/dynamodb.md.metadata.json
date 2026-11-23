@@ -1,0 +1,8 @@
+{
+  "metadataAttributes": {
+    "service": "dynamodb",
+    "category": "データベース",
+    "level": "応用",
+    "weak_point": true
+  }
+}

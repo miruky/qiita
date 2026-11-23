@@ -1,0 +1,8 @@
+{
+  "metadataAttributes": {
+    "service": "cloudwatch",
+    "category": "監視",
+    "level": "基礎",
+    "weak_point": false
+  }
+}
